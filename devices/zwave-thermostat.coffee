@@ -86,7 +86,7 @@ module.exports = (env) ->
             else if data.value is 31
              @_base.debug "thermostat mode is 'Manufacturer Specific'"
              @_setMode("manu")
-           else
+            else
              @_base.debug "No valid thermostat mode received"
 
 
