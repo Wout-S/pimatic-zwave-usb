@@ -16,7 +16,7 @@ module.exports = (env) ->
       @node = @config.node
       @value_id = null
 
-      @_mode = "auto"
+      @_mode =  lastState?.mode?.value or "--"
       @_setSynced(false)
 
       @responseHandler = @_createResponseHandler()
@@ -72,6 +72,23 @@ module.exports = (env) ->
             @_setValve(parseInt(data.value))
             @timestamp = (new Date()).getTime()
 
+          if data.class_id is 64
+            @_base.debug "Update thermostat mode", data.value
+            if data.value is 0
+             @_base.debug "thermostat mode is 'Off'"
+            else if data.value is 1
+             @_base.debug "thermostat mode is 'Heat'"
+             @_setMode("auto")
+            else if data.value is 11
+             @_base.debug "thermostat mode is 'Energy Heat'"
+            else if data.value is 15
+             @_base.debug "thermostat mode is 'Full Power'"
+            else if data.value is 31
+             @_base.debug "thermostat mode is 'Manufacturer Specific'"
+             @_setMode("manu")
+           else
+             @_base.debug "No valid thermostat mode received"
+
 
     _callbackHandler: () ->
       return (response) =>
@@ -83,16 +100,46 @@ module.exports = (env) ->
       @plugin.protocolHandler.removeListener 'response', @responseHandler
       super()
 
+    changeModeTo(mode) =>
+     return new Promise (resolve, reject) =>
+        if @_mode is mode then return Promise.resolve()
+
+        if(@value_id)
+          if mode is "auto"
+           @plugin.protocolHandler.sendRequest({ value_id: @value_id, node_id: @node, class_id: 64, instance:1, index:0}, 1)
+           @_setMode(parseFloat(mode));
+           @_base.debug "sending request to change mode to auto/Heat/1"
+          if mode is "manu"
+           @plugin.protocolHandler.sendRequest({ value_id: @value_id, node_id: @node, class_id: 64, instance:1, index:0}, 31)
+           @_setMode(parseFloat(mode));
+           @_base.debug "sending request to change mode to manu/Manufacturer Specific/31"
+
+        else
+          @_base.info "Please wake up ", @name, " device has no value_id yet"
+
+        resolve()
+
+    getMode: -> Promise.resolve(@_mode)
+
     changeTemperatureTo: (temperatureSetpoint) =>
       return new Promise (resolve, reject) =>
         if @_temperatureSetpoint is temperatureSetpoint then return Promise.resolve()
 
         if(@value_id)
-          @plugin.protocolHandler.sendRequest({ value_id: @value_id, node_id: @node, class_id: 67, instance:1, index:1}, parseFloat(temperatureSetpoint).toFixed(2), "thermostat")
+          if mode is "manu"
+            @_base.debug "mode is manu, sending valve percentage request"
+            @plugin.protocolHandler.sendRequest({ value_id: @value_id, node_id: @node, class_id: 38, instance:1, index:0}, parseFloat(temperatureSetpoint).toFixed(2), "thermostat")
+            @_setValve(parseFloat(temperatureSetpoint));
+          else if mode is "auto"
+            @_base.debug "mode is auto, sending temperature setpoint request"
+            @plugin.protocolHandler.sendRequest({ value_id: @value_id, node_id: @node, class_id: 67, instance:1, index:1}, parseFloat(temperatureSetpoint).toFixed(2), "thermostat")
+            @_setSetpoint(parseFloat(temperatureSetpoint));
+          else
+            @_base.debug "invalid mode"
         else
           @_base.info "Please wake up ", @name, " device has no value_id yet"
 
-        @_setSetpoint(parseFloat(temperatureSetpoint));
+
         resolve()
 
     getTemperature: -> Promise.resolve(@_temperatureSetpoint)

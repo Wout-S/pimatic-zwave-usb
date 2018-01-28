@@ -20,6 +20,10 @@ module.exports = {
         description: "Show the preset temperatures in the GUI"
         type: "boolean"
         default: false
+      guiShowModeControl:
+        description: "Show the mode buttons in the GUI"
+        type: "boolean"
+        default: true
       syncTimeout:
         description: "After this timeout the sync status is reset to false, in minutes"
         type: "integer"
