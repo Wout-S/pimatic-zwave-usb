@@ -100,7 +100,7 @@ module.exports = (env) ->
       @plugin.protocolHandler.removeListener 'response', @responseHandler
       super()
 
-    changeModeTo(mode) =>
+    changeModeTo: (mode) =>
      return new Promise (resolve, reject) =>
         if @_mode is mode then return Promise.resolve()
 
