@@ -25,6 +25,10 @@ module.exports = (env) ->
     {
       "name": "ZWave-usb Temperature Sensor"
       "class": "ZwaveTemperatureSensor"
+    },
+    {
+      "name": "ZWave-usb Radiator Valve Controller"
+      "class": "ZwaveValveController"
     }
   ]
 
@@ -37,7 +41,7 @@ module.exports = (env) ->
 
       for device in deviceConfigTemplates
         className = device.class
-          
+
         # convert camel-case classname to kebap-case filename
         filename = className.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase()
 
@@ -79,7 +83,7 @@ module.exports = (env) ->
               name: deviceToText,
               node: device?.nodeid
             }
-            
+
             @framework.deviceManager.discoveredDevice(
               'pimatic-zwave-usb', "Presence of #{deviceToText}", config
             )
